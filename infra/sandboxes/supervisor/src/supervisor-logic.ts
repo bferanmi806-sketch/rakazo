@@ -311,6 +311,9 @@ export function containerActionStep(
       : workspaceTarget(normalizeWorkspaceRelative(action.path));
     argv = ["env", `DISPLAY=${display}`, "xdg-open", target];
   } else {
+    if (action.uri?.startsWith("-")) {
+      throw new Error("launch URI cannot start with an option");
+    }
     const application = DOCKER_BROWSER_ALIASES.has(action.application.toLowerCase())
       ? "rakazo-browser"
       : action.application;

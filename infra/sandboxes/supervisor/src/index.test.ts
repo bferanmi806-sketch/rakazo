@@ -216,6 +216,11 @@ describe("sandbox supervisor input containment", () => {
     expect(containerActionStep({ kind: "launch", application: "xterm" }, ":3")).toEqual({
       argv: ["env", "DISPLAY=:3", "xterm"],
     });
+    expect(
+      containerActionStep({ kind: "launch", application: "xterm", uri: "notes.txt" }, ":3"),
+    ).toEqual({
+      argv: ["env", "DISPLAY=:3", "xterm", "notes.txt"],
+    });
     expect(containerActionStep({ kind: "open", path: "https://example.com" }, ":3")).toEqual({
       argv: ["env", "DISPLAY=:3", "xdg-open", "https://example.com"],
     });
@@ -232,6 +237,19 @@ describe("sandbox supervisor input containment", () => {
     expect(containerActionStep({ kind: "launch", application: "XTerm" }, ":3")).toEqual({
       argv: ["env", "DISPLAY=:3", "XTerm"],
     });
+  });
+
+  it("rejects option-like launch URIs before they reach a Docker application", () => {
+    expect(() =>
+      containerActionStep(
+        {
+          kind: "launch",
+          application: "chrome",
+          uri: "--user-data-dir=/tmp/attacker-profile",
+        },
+        ":2",
+      ),
+    ).toThrow(/launch URI cannot start with an option/);
   });
 
   it("keeps browser routing argv identical for control and Docker exec fallback", () => {
@@ -403,6 +421,9 @@ describe("sandbox supervisor input containment", () => {
     expect(ensureScreenCommand(1)).toContain("Xvfb :2");
     expect(ensureScreenCommand(1)).toContain("rfbport 5902");
     expect(ensureScreenCommand(1)).toContain("0.0.0.0:6082");
+    expect(ensureScreenCommand(1)).toContain(
+      "DISPLAY=:2 HOME=/home/rakazo rakazo-browser --user-data-dir=/home/rakazo/.browser-profiles/chromium-screen-2",
+    );
     expect(() => nextScreenIndex(assigned, "overflow", undefined, 1)).toThrow(
       /cannot allocate another screen/,
     );
